@@ -11,7 +11,7 @@ owner: xayer-mana
 codeowners: [xayer-mana]
 
 # Versão
-versao-atual: 0.1.0
+versao-atual: 0.2.0
 ultima-revisao: 2026-07-06
 
 # Status do ciclo de vida
@@ -22,7 +22,8 @@ ultima-revisao: 2026-07-06
 status: alpha
 consumidores-migrados: []
 notas-de-migracao:
-  - "2026-07-06: extração inicial. Origem prática: padrão fan-out DM do agente-gestor-comercial (mapa_vendedores + throttle + agendamento editável), envio de imagem do agente-gestor-estoque (Pillow → /send-image), TTS do agente-agronomo (modo=audio + voz onyx). Primeiro consumidor planejado: agente-comercio-revendas (Dayan, piloto)."
+  - "2026-07-06 (v0.1.0): extração inicial. Origem prática: padrão fan-out DM do agente-gestor-comercial (mapa_vendedores + throttle + agendamento editável), envio de imagem do agente-gestor-estoque (Pillow → /send-image), TTS do agente-agronomo (modo=audio + voz onyx). Primeiro consumidor planejado: agente-comercio-revendas (Dayan, piloto)."
+  - "2026-07-06 (v0.2.0): adicionada RespostaColetor — padrão de coleta de respostas WhatsApp com match por últimos-8-dígitos (copiado do agente-tms, validado E2E 2026-05-25). Parseia valor_numerico/texto/boolean/choice. Nova tabela coletas_resposta. Consumido pelo agente-comercio-revendas (Dayan) pra distribuidor responder valor por DM (igual TMS SAVING)."
 
 # Matriz 3D (Maná Builder)
 cadeia: transversal
@@ -64,12 +65,13 @@ persistencia:
     - contatos_notificacao (id, nome, whatsapp UNIQUE, email, ativo, tags[], metadata jsonb, timestamps)
     - envios_notificacao (idempotency_key UNIQUE, contato_id FK, telefone, tipo, sucesso, tentativa, hub_response jsonb)
     - jobs_notificacao (id TEXT, nome, cron, ativo, ultimo_run, proximo_run, metadata jsonb)
+    - coletas_resposta (id, envio_id FK, contato_id FK, tipo_esperado, valor_parseado jsonb, telefone_esperado, ultimos_digitos, match_confianca, prazo_ate, respondido_em)   # v0.2.0
 
 # Distribuição
 registry: git-tag
 url-pacote: ""
 url-repo: https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp
-url-instalacao: "git+https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp.git@v0.1.0"
+url-instalacao: "git+https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp.git@v0.2.0"
 
 # Dependências
 deps-hard:
@@ -94,8 +96,8 @@ adrs:
 
 # Métricas de qualidade
 testes:
-  pytest: 88
-  cobertura: 85%
+  pytest: 123
+  cobertura: 84%
   minimo-mana: 70%
 
 # Skill Cowork associada (guia + gotchas)

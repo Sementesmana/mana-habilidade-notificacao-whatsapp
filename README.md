@@ -5,7 +5,7 @@
 ## Instalação
 
 ```bash
-pip install "git+https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp.git@v0.1.0"
+pip install "git+https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp.git@v0.2.0"
 ```
 
 Dependências: `requests`, `psycopg2-binary`, `APScheduler`. Depende também do hub HTTP `agente-whatsapp` (ADR 2026-06-13) e do `banco-mana` (Postgres compartilhado).
@@ -75,6 +75,63 @@ scheduler.agendar_cron("meta-semanal", "0 8 * * MON", callback=enviar_meta_seman
 scheduler.start()  # inicia APScheduler
 ```
 
+
+## Coleta de respostas (v0.2.0 — padrão TMS)
+
+**Padrão consolidado do `agente-tms` (validado E2E 2026-05-25):** envia msg pedindo valor → recebe resposta via `agente-router` → parseia → grava no banco.
+
+```python
+from mana_habilidade_notificacao_whatsapp import RespostaColetor, TIPO_VALOR_NUMERICO
+
+coletor = RespostaColetor(
+    db_url=DATABASE_URL,
+    schema="comercializacao",
+    match_ultimos_digitos=8,   # padrão TMS: tolera 55/DDD/9º dígito
+)
+coletor.init_schema()   # cria tabela coletas_resposta
+
+# 1) Envia solicitação
+sender.send_text(contato.whatsapp, "Distribuidor, qual o valor da saca de arroz?")
+
+# 2) Registra que espera resposta
+coleta = coletor.criar(
+    telefone_esperado=contato.whatsapp,
+    tipo_esperado=TIPO_VALOR_NUMERICO,   # ou TIPO_TEXTO, TIPO_BOOLEAN, TIPO_CHOICE
+    contato_id=contato.id,
+    metadata={"produto": "arroz", "unidade": "saca"},
+    prazo_horas=48,
+)
+
+# 3) Endpoint do consumidor recebe webhook do agente-router
+@app.route("/webhook-retorno", methods=["POST"])
+def webhook_retorno():
+    data = request.json
+    r = coletor.processar_resposta(
+        telefone_origem=data["telefone"],
+        texto_bruto=data["texto"],
+    )
+    if r["match"] and r["valor_parseado"] is not None:
+        # Consumidor decide o que fazer com o valor (ex.: gravar cotação)
+        salvar_cotacao(r["coleta"].contato_id, r["valor_parseado"])
+    return "ok"
+
+# Listar
+pendentes = coletor.listar_pendentes()
+respondidas = coletor.listar_respondidas(horas_recentes=24)
+expiradas = coletor.listar_expiradas()
+```
+
+**Tipos esperados de resposta:**
+
+| Tipo | Parser | Exemplo input → output |
+|---|---|---|
+| `TIPO_VALOR_NUMERICO` | `parse_valor_numerico` | `"R$ 45,50 por saca"` → `45.50` |
+| `TIPO_TEXTO` | strip | `"  qualquer  "` → `"qualquer"` |
+| `TIPO_BOOLEAN` | sim/não/1/0/ok/... | `"sim"` → `True` |
+| `TIPO_CHOICE` | contém opção (case-insensitive) | `"quero PIX"` + `["PIX","Boleto"]` → `"PIX"` |
+
+**Match por últimos-N-dígitos** (default 8): tolera diferenças de 55/DDD/9º dígito extra. Ex.: `"5562999999999"`, `"62999999999"`, `"+55 (62) 9 9999-9999"` — todos casam com coleta cujo telefone_esperado tem os mesmos últimos 8 dígitos.
+
 ## Módulos
 
 | API | Responsabilidade |
@@ -83,7 +140,8 @@ scheduler.start()  # inicia APScheduler
 | `ContatoRepo` | CRUD de `contatos_notificacao` (criar, buscar_por_id, buscar_por_whatsapp, listar_ativos, atualizar, ativar/desativar, deletar, criar_lote) |
 | `WhatsAppSender` | `send_text`, `send_audio` (TTS), `send_pdf`, `send_document`, `send_image`, `broadcast_text` (lote nativo), `broadcast_pdf`, `broadcast_image` |
 | `NotificationScheduler` | Wrapper APScheduler (`agendar_cron`, `agendar_intervalo`, `pausar`, `retomar`, `remover`, `listar_jobs`) |
-| `Contato` | Dataclass do contato (id, nome, whatsapp, email, ativo, tags, metadata) |
+| `RespostaColetor` (v0.2.0) | Cria contexto de coleta, faz match por últimos-N-dígitos, parseia resposta (numérico/texto/booleano/choice) |
+| `Contato` / `Coleta` | Dataclasses (id, campos do domínio) |
 
 ## O que a habilidade automatiza
 
@@ -126,7 +184,7 @@ Trafega **PII** (nome + whatsapp + email). Se for enviar dado do contato pra LLM
 
 ## Estado
 
-**v0.1.0 — alpha** (extração inicial 2026-07-06).
+**v0.2.0 — alpha** (extração inicial 2026-07-06).
 
 Consumidor real planejado como 1º migração: `agente-comercio-revendas` (Dayan, piloto). Vira **beta** quando ele migrar em produção sem regressão. Vira **producao** quando 2+ consumidores reais rodarem.
 

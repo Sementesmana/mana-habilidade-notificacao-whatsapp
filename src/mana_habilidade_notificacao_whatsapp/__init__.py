@@ -44,8 +44,20 @@ Uso mínimo:
 Ver SKILL.md pra referência completa.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
+from .coletor import (
+    Coleta,
+    RespostaColetor,
+    parse_boolean,
+    parse_choice,
+    parse_valor_numerico,
+    ultimos_n_digitos,
+    TIPO_BOOLEAN,
+    TIPO_CHOICE,
+    TIPO_TEXTO,
+    TIPO_VALOR_NUMERICO,
+)
 from .contato import Contato, ContatoRepo
 from .ddl import ContatoDDL
 from .exceptions import (
@@ -72,6 +84,17 @@ __all__ = [
     "Contato",
     "WhatsAppSender",
     "NotificationScheduler",
+    # Coleta de respostas (padrão TMS)
+    "RespostaColetor",
+    "Coleta",
+    "parse_valor_numerico",
+    "parse_boolean",
+    "parse_choice",
+    "ultimos_n_digitos",
+    "TIPO_VALOR_NUMERICO",
+    "TIPO_TEXTO",
+    "TIPO_BOOLEAN",
+    "TIPO_CHOICE",
     # Exceções
     "NotificationError",
     "ConfigError",

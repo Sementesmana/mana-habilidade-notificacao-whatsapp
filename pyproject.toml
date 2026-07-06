@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mana-habilidade-notificacao-whatsapp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cadastro de contatos + cron + envio de notificações WhatsApp (texto, áudio, PDF, imagem) via hub agente-whatsapp. Habilidade Maná Builder Camada 2C."
 readme = "README.md"
 license = { text = "Proprietary — Sementes Maná LTDA" }
