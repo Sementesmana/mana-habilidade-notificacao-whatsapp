@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mana-habilidade-notificacao-whatsapp"
+version = "0.1.0"
+description = "Cadastro de contatos + cron + envio de notificações WhatsApp (texto, áudio, PDF, imagem) via hub agente-whatsapp. Habilidade Maná Builder Camada 2C."
+readme = "README.md"
+license = { text = "Proprietary — Sementes Maná LTDA" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Xayer", email = "xayer@sementesmana.com.br" },
+]
+keywords = ["mana", "whatsapp", "notificacao", "cron", "fan-out", "habilidade", "mana-builder"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Topic :: Communications",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "requests>=2.31",
+    "psycopg2-binary>=2.9",
+    "APScheduler>=3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp"
+Repository = "https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp"
+Documentation = "https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp/blob/main/SKILL.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["mana_habilidade_notificacao_whatsapp"]
+branch = false
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

@@ -1,0 +1,119 @@
+# Manifesto da Habilidade — Maná Builder
+# Ver: ADR 2026-06-26-mana-builder-matriz-cobertura (vault)
+
+# Identidade
+nome: mana-habilidade-notificacao-whatsapp
+descricao: Cadastro de contatos + agendamento cron + envio de notificações WhatsApp (texto, áudio TTS, PDF, imagem) via hub agente-whatsapp. Consolida padrão fan-out DM usado em 4 agentes Maná (gestor-comercial, gestor-estoque, premiacao, comercio-revendas). Camada 2C.
+categoria: habilidade
+
+# Ownership
+owner: xayer-mana
+codeowners: [xayer-mana]
+
+# Versão
+versao-atual: 0.1.0
+ultima-revisao: 2026-07-06
+
+# Status do ciclo de vida
+# ADR 2026-06-28-habilidade-canonica-gate-consumidor-real
+# alpha = extração inicial sem consumidor migrado
+# beta = 1 consumidor real em produção
+# producao = 2+ consumidores reais sem regressão
+status: alpha
+consumidores-migrados: []
+notas-de-migracao:
+  - "2026-07-06: extração inicial. Origem prática: padrão fan-out DM do agente-gestor-comercial (mapa_vendedores + throttle + agendamento editável), envio de imagem do agente-gestor-estoque (Pillow → /send-image), TTS do agente-agronomo (modo=audio + voz onyx). Primeiro consumidor planejado: agente-comercio-revendas (Dayan, piloto)."
+
+# Matriz 3D (Maná Builder)
+cadeia: transversal
+sub-categoria-emergente: notificacoes
+hierarquia: []
+tipo_artefato: habilidade
+camada-plataforma-agentica: 2C
+
+# Relações
+substitui-copias-em:
+  - agente-gestor-comercial
+  - agente-gestor-estoque
+  - agente-premiacao
+consumidores: []
+consumidores-planejados:
+  - agente-comercio-revendas
+  - agente-gestor-comercial
+  - agente-gestor-estoque
+  - agente-premiacao
+depende-de:
+  - agente-whatsapp   # HUB HTTP obrigatório (ADR 2026-06-13)
+habilidades-irmas: []
+
+# Provider externo (o hub)
+provider-externo: agente-whatsapp (hub HTTP institucional)
+endpoints-hub:
+  - "POST /send-whatsapp — texto ou áudio (modo=audio via TTS local)"
+  - "POST /send-whatsapp-lista — envio em lote (nativo)"
+  - "POST /send-document — PDF / documento binário (base64, ≤12MB)"
+  - "POST /send-image — imagem inline com preview (base64, ≤12MB, png/jpg/jpeg)"
+url-hub: "https://agente-whatsapp-production.up.railway.app"
+auth-hub: "Header X-API-Key"
+
+# Persistência (opcional — habilidade cria schema/tabelas se init_schema chamado)
+persistencia:
+  banco: postgres
+  schema-parametrizavel: true
+  tabelas:
+    - contatos_notificacao (id, nome, whatsapp UNIQUE, email, ativo, tags[], metadata jsonb, timestamps)
+    - envios_notificacao (idempotency_key UNIQUE, contato_id FK, telefone, tipo, sucesso, tentativa, hub_response jsonb)
+    - jobs_notificacao (id TEXT, nome, cron, ativo, ultimo_run, proximo_run, metadata jsonb)
+
+# Distribuição
+registry: git-tag
+url-pacote: ""
+url-repo: https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp
+url-instalacao: "git+https://github.com/Sementesmana/mana-habilidade-notificacao-whatsapp.git@v0.1.0"
+
+# Dependências
+deps-hard:
+  - "requests>=2.31"
+  - "psycopg2-binary>=2.9"
+  - "APScheduler>=3.10"
+deps-opcionais: []
+binarios-sistema: []
+
+# LGPD
+toca-pii: true    # nome + whatsapp + email dos contatos; consumidor decide se pseudonimiza antes do LLM
+
+# ADRs aplicáveis
+adrs:
+  - 2026-06-13-padrao-llm-gateway-e-porta-unica-whatsapp
+  - 2026-06-24-plataforma-agentica-mana-5-camadas
+  - 2026-06-26-mana-builder-matriz-cobertura
+  - 2026-06-26-fluxo-criacao-habilidade-mana-builder
+  - 2026-06-26-distribuicao-via-git-tag-pacotes-mana-builder
+  - 2026-06-26-plugin-mana-skills-cowork
+  - 2026-06-28-habilidade-canonica-gate-consumidor-real
+
+# Métricas de qualidade
+testes:
+  pytest: 88
+  cobertura: 85%
+  minimo-mana: 70%
+
+# Skill Cowork associada (guia + gotchas)
+skill-cowork: mana-habilidade-notificacao-whatsapp   # publicada em plugin-mana-skills
+
+# Tags livres
+tags:
+  - whatsapp
+  - notificacao
+  - cron
+  - agendamento
+  - fan-out
+  - broadcast
+  - contatos
+  - tts
+  - audio
+  - pdf
+  - imagem
+  - mana-builder
+  - transversal
+  - camada-2c
